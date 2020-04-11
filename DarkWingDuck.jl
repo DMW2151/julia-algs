@@ -1,3 +1,9 @@
+module DarkWingDuck
+
+#= Learning Julia 1.0 - Implement Quad-Trees in Julia
+Work towards an efficient Quadtree for analysis on geospatial datasets Adapted from [GeeksForGeeks](https://www.geeksforgeeks.org/quad-tree/) datatype deesctiption and [Wikipedia](https://en.wikipedia.org/wiki/Quadtree#Pseudocode)
+=#
+
 const QT_MAX_PTS = 4
 
 """ AbstractType for 2D shapes w. 4 corners """
@@ -307,3 +313,5 @@ function radialSearch(r::qtBox, c::Coord, d::Union{Float32, Float64})::Array{Coo
     # Get first square
     return filter(x -> x = haversineDistance(x, c) < d, queryRange(r, getSearchRange(c, d)))
 end 
+
+end
