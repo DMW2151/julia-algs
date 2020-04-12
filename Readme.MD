@@ -15,7 +15,7 @@ Sample inserts into the tree. Tree size and query time highly dependent on point
 using BenchmarkTools
 using DarkWingDuck; const dwd = DarkWingDuck;
 
-const QT_TEST_SIZE, = 500_000
+const QT_TEST_SIZE, = 1_000_000
 
 ## Random Coords on (0,1)^2
 ps = dwd.genRandomCoords(0., 1., 0., 1., QT_TEST_SIZE);
@@ -24,7 +24,7 @@ sampleQTree = dwd.qtBox(dwd.Coord(.0, .0), 1.)
 @time (for p in ps dwd.insertIntoQuadTree!(sampleQTree, p) end)
 println("Total Obj Size: $(Base.summarysize(sampleQTree) / 1000000 ) MB")
 
-$ 0.993016 seconds (11.44 M allocations: 369.161 MiB, 24.99% gc time)
+$ 2.340458 seconds (24.43 M allocations: 795.519 MiB, 27.85% gc time)
 $ Total Obj Size: 44.367784 MB
 ```
 
