@@ -5,6 +5,14 @@ const C = Float32(6372.8)
 
 include("geomtypes.jl") # Import Custom DataTypes
 
+
+"""Generate uniform random points along a surface"""
+function genRandomCoords(x0::Float64, x1::Float64, y0::Float64, y1::Float64, n::Int)::Array{Coord}
+    X = ((ones(n) * x0) + (rand(n) * (x1 - x0))) 
+    Y = ((ones(n) * y0) + (rand(n) * (y1 - y0)))
+    return [Coord(x, y) for (x,y) in zip(X,Y)]
+end
+
 """
 Check if point (p) is contained in a Box by comparing point to
 the east and north of the box's SW point 
