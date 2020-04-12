@@ -1,7 +1,6 @@
 module DarkWingDuck
 
 const QT_MAX_PTS = 8
-const C = Float32(6372.8)
 
 include("geomtypes.jl") # Import Custom DataTypes
 
@@ -258,13 +257,11 @@ end
 """
 Calculate Haversine Distance between two Coords. Formula 
 calculates great-circle distance between two points 
-Modified from:
-    - https://www.movable-type.co.uk/scripts/latlong.html
+Many thanks to: #https://github.com/quinnj/Rosetta-Julia/blob/master/src/Haversine.jl
 """
-function haversineDistance(p1::Coord, plng::Float64, plat::Float64)::Float64
-    d_lat = deg2rad(plat - p1.lat)
-    A = (sin(d_lat/2) * sin(d_lat/2)) + cos(deg2rad(p1.lat)) * cos(deg2rad(plat)) * sin((plng - p1.lng)/2)^2
-    return C * (2 * atan(sqrt(A), sqrt(1-A)))
+function haversineDistance(p1::Coord, lng2::Float64, lat2::Float64)::Float64
+    lat1, lng1 = p1.lat, p1.lng 
+    return 2 * 6372.8 * asin(sqrt(sind((lat2-lat1)/2)^2 + cosd(lat1) * cosd(lat2) * sind((lng2 - lng1)/2)^2))
 end
 
 
@@ -280,5 +277,13 @@ function radialSearch(r::qtBox, c::Coord, d::Float32)::Array{Coord}
     lng, lat = getLocation(c)
     return filter(x -> x = haversineDistance(x, lng, lat) < d, queryRange(r, getSearchRange(c, d)))
 end 
+
+""" 
+Nearest Neighbor Search 
+    - http://homepage.divms.uiowa.edu/~kvaradar/sp2012/daa/ann.pdf
+"""
+function nnSearch(c::Coord)::Coord
+    return c #Not yet Implemented
+    end
 
 end
