@@ -175,9 +175,45 @@ function coordRemoval!(r::qtBox, t::Coord)::Bool
 
 end
 
-# no Children nodes remain 
+""" Name says it all, allow nothing..."""
+function permissiveLen(x::Union{Array{Coord},Nothing})::Int64
+    if (typeof(x) === Nothing)  #Yuck
+        return 0
+    else
+        return length(x)
+    end
+end
+    
+    
+""" Wrapper to evaluate if children are empty """
 function childrenEmpty(rs::Array{qtBox})::Bool
-    return sum(x -> x = ((x.points !== nothing) || !isassigned(x.points)), rs) == 0
+    return sum(x -> x = permissiveLen(x.points), rs) == 0
+end
+
+"""
+Check Nodes where 1) points exist or existed, 2) children exist
+meet condition:
+    - (Array{dwd.Coord}([]) === nothing) = False
+isassigned(Array{dwd.Coord}([])) = False
+"""
+function cleanUpQTree(r::qtBox)::Bool
+    # Base Condition: Check If parent without Points has children without points
+    if ((r.points === nothing) && (r.children === nothing))
+        return true # Probably a new Tree
+    end
+    
+    # The Work...
+    if (r.children !== nothing) && childrenEmpty(r.children)
+        r.children = Array{qtBox}([])
+    end
+    
+    if (r.children !== nothing) && isassigned(r.children)
+        for c in r.children 
+            cleanUpQTree(c)
+        end
+    end
+    
+    return true
 end
 
 """
@@ -186,7 +222,7 @@ WIP: Option to run intermediate cleaup on the parents of the removed point
 see:
     - https://stackoverflow.com/a/9387997
 """
-function removePointRebuild!(r::qtBox, t::Coord, modifyStructure::Bool)::Bool
+function removePoint!(r::qtBox, t::Coord)::Bool
     # Skip removing point if outside of parent range
     if !checkPoint(t, r)
         return false
@@ -198,24 +234,11 @@ function removePointRebuild!(r::qtBox, t::Coord, modifyStructure::Bool)::Bool
             return true
         end
     end
-    
-    if modifyStructure # TODO: Cobbled this together w. no external reference, plz check again...
-        if (r.children !== nothing)
-            for c in r.children # Search the space, each of children
-                if c.points !== nothing
-                    if coordRemoval!(c, t) && childrenEmpty(r.children)
-                        r.children = Array{qtBox}([]) #If all children are empty, reset child array
-                        return true
-                    end
-                end
-            end
-        end
-    end
-        
+            
     # If parent has children, recursively check to see if point is there
     if r.children !== nothing
         for c in r.children
-            if removePointRebuild!(c, t, modifyStructure)
+            if removePoint!(c, t)
                 return true
             end
         end
