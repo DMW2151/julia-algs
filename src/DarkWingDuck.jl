@@ -5,12 +5,10 @@ const C = Float32(6372.8)
 
 include("geomtypes.jl") # Import Custom DataTypes
 
-# """
-# Check if point (p) is contained in a Box by comparing point to
-# the east and north of the box's SW point 
-# """
-
-"""Check if point (p) is contained in a Box"""
+"""
+Check if point (p) is contained in a Box by comparing point to
+the east and north of the box's SW point 
+"""
 function checkPoint(p::Coord, region::AbstractBox)::Bool
     # Check if point is to the east and north of the box's SW point 
     return (
@@ -31,7 +29,6 @@ function regionContains(s0::qtBox, s1::AbstractBox)::Bool
         ((s0.SW.lng + s0.sideLength) <= (s1.SW.lng + s1.sideLength))
 end 
 
-      
 """ Check if a Box (s1) intersects/overlaps a qtBox (s0)"""
 function regionOverlap(s0::qtBox, s1::Box)::Bool
     # If one rectangle is on left side of other 
@@ -165,13 +162,23 @@ function queryRange(r::qtBox, qryBox::AbstractBox)::Array{Coord}
 end
 
 
-getLocation = x::Coord -> (x.lat, x.lng)
+getLocation = x::Coord -> (x.lng, x.lat)
 
 """Wrapper to getLocation function, extracts lat and lng attributes from AbstractBox"""
-function partialCoordComp(ps::Array{Coord}, t::Coord)::Bool
-    return getLocation(t) in map(getLocation, ps)
+function coordRemoval!(r::qtBox, t::Coord)::Bool
+    if getLocation(t) in map(getLocation, r.points)
+        filter!(x -> x != t, r.points) # TODO: PLEASE MAKE SURE THIS IS POINTING TO THE ACTUAL OBJ
+        return true
+    else
+        return false
+    end
+
 end
 
+# no Children nodes remain 
+function childrenEmpty(rs::Array{qtBox})::Bool
+    return sum(x -> x = ((x.points !== nothing) || !isassigned(x.points)), rs) == 0
+end
 
 """
 Removes point from tree structure, find the point (t) and remove
@@ -181,33 +188,23 @@ see:
 """
 function removePointRebuild!(r::qtBox, t::Coord, modifyStructure::Bool)::Bool
     # Skip removing point if outside of parent range
-    if !checkPoint(t, r) 
+    if !checkPoint(t, r)
         return false
     end
     
     # Check equality, check to see if coordinates are EXACTLY in parent's set of points
-    if r.points !== nothing
-        if partialCoordComp(r.points, t) 
-            filter!(x -> x != t, r.points)
+    if (r.points !== nothing) && isassigned(r.points)
+        if coordRemoval!(r, t) 
             return true
         end
     end
     
-    # WIP: CHECK THIS BLOCK
     if modifyStructure # TODO: Cobbled this together w. no external reference, plz check again...
-        if r.children !== nothing
+        if (r.children !== nothing)
             for c in r.children # Search the space, each of children
                 if c.points !== nothing
-                    if partialCoordComp(c.points, t) 
-                        filter!(x -> x != t, c.points) # if in child, remove and return true
-
-                        # Modify Structure Sequence: If no children have points, 
-                        # delete this qtBox's children by setting children back 
-                        # to `Array{qtBox}([])`, TODO: Check Array{qtBox}([qtBox(Coord(1., 1.), 1.)])?
-                        if sum(x -> x = (x.points !== nothing), r.children) == 0
-                            r.children = Array{qtBox}([])
-                        end
-
+                    if coordRemoval!(c, t) && childrenEmpty(r.children)
+                        r.children = Array{qtBox}([]) #If all children are empty, reset child array
                         return true
                     end
                 end
@@ -227,19 +224,15 @@ function removePointRebuild!(r::qtBox, t::Coord, modifyStructure::Bool)::Bool
     return false #Could not remove point...
 end
 
-
 """
 Calculate Haversine Distance between two Coords. Formula 
 calculates great-circle distance between two points 
 Modified from:
     - https://www.movable-type.co.uk/scripts/latlong.html
 """
-function haversineDistance(p1::Coord, p2::Coord)::Float32
-    lat1, lat2 = p1.lat, p2.lat    
-    d_lat = deg2rad(lat2 - lat1)
-
-    A = (sin(d_lat/2) * sin(d_lat/2)) + cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * sin((p2.lng - p2.lng)/2)^2
-
+function haversineDistance(p1::Coord, plng::Float64, plat::Float64)::Float64
+    d_lat = deg2rad(plat - p1.lat)
+    A = (sin(d_lat/2) * sin(d_lat/2)) + cos(deg2rad(p1.lat)) * cos(deg2rad(plat)) * sin((plng - p1.lng)/2)^2
     return C * (2 * atan(sqrt(A), sqrt(1-A)))
 end
 
@@ -253,7 +246,8 @@ end
 """ Get all values in a given radius of a Coord """
 function radialSearch(r::qtBox, c::Coord, d::Float32)::Array{Coord}
     # Get first square
-    return filter(x -> x = haversineDistance(x, c) < d, queryRange(r, getSearchRange(c, d)))
+    lng, lat = getLocation(c)
+    return filter(x -> x = haversineDistance(x, lng, lat) < d, queryRange(r, getSearchRange(c, d)))
 end 
 
 end
