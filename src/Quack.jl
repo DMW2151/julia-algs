@@ -1,6 +1,6 @@
-module DarkWingDuck
+module Quack
 
-const QT_MAX_PTS = 8
+const QT_MAX_PTS = 4
 
 include("geomtypes.jl") # Import Custom DataTypes
 
@@ -182,7 +182,7 @@ function coordRemoval!(r::qtBox, t::Coord)::Bool
 
 end
 
-""" Name says it all, allow nothing..."""
+""" Name says it all, allow type nothing..."""
 function permissiveLen(x::Union{Array{Coord},Nothing})::Int64
     if (typeof(x) === Nothing)  #Yuck
         return 0

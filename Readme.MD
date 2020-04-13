@@ -13,15 +13,15 @@ Sample inserts into the tree. Tree size and query time highly dependent on point
 
 ```Julia
 using BenchmarkTools
-using DarkWingDuck; const dwd = DarkWingDuck;
+using Quack; const QTrees = Quack;
 
 const QT_TEST_SIZE, = 1_000_000
 
 ## Random Coords on (0,1)^2
-ps = dwd.genRandomCoords(0., 1., 0., 1., QT_TEST_SIZE);
-sampleQTree = dwd.qtBox(dwd.Coord(.0, .0), 1.)
+ps = QTrees.genRandomCoords(0., 1., 0., 1., QT_TEST_SIZE);
+sampleQTree = QTrees.qtBox(QTrees.Coord(.0, .0), 1.)
 
-@time (for p in ps dwd.insertIntoQuadTree!(sampleQTree, p) end)
+@time (for p in ps QTrees.insertIntoQuadTree!(sampleQTree, p) end)
 println("Total Obj Size: $(Base.summarysize(sampleQTree) / 1000000 ) MB")
 
 $ 2.340458 seconds (24.43 M allocations: 795.519 MiB, 27.85% gc time)
@@ -29,7 +29,7 @@ $ Total Obj Size: 44.367784 MB
 ```
 
 ```Julia
-@benchmark dwd.queryRange(sampleQTree, dwd.Box(dwd.Coord(rand() , rand()), rand()/2))
+@benchmark QTrees.queryRange(sampleQTree, QTrees.Box(QTrees.Coord(rand() , rand()), rand()/2))
 
 BenchmarkTools.Trial: 
   memory estimate:  10.16 KiB
