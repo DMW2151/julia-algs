@@ -100,16 +100,19 @@ function insertIntoQuadTree!(r::qtBox, ps::Coord)::Bool
         subdivide!(r) 
     end
     
-    # Now that there are children, insert
-    if r.children !== nothing
+    if r.children !== nothing # Now that there are children, insert
         for c in r.children 
             if insertIntoQuadTree!(c, ps)
                 return true
             end
         end
     end
-    
     return false # Fatal - Should not happen
+end
+
+""" Extract UUID """
+function getUUID(c::Array{Coord})::Array{UUID}
+    return map(x -> x.uuid, c)
 end
 
 """
@@ -122,27 +125,21 @@ function queryRange(r::qtBox, qryBox::AbstractBox)::Array{Coord}
 
     # Initialize return list
     pointsInRange = Array{Coord}(Array[])
-    
-    # Exit if the range does not intersect this quad
     if !regionOverlap(r, qryBox)
-        return pointsInRange
+        return pointsInRange # Exit if the range does not intersect this quad
 
     elseif regionContains(r, qryBox) 
-        # If  full region overlap then add all points w./o checks
-        if r.points !== nothing
-            # Append parent points - No Check
-            append!(pointsInRange, r.points) 
+        if r.points !== nothing # If  full region overlap then add all points w./o checks
+            append!(pointsInRange, r.points) # Append parent points - No Check
         end
         
-        # Append children's Point's - No Check
-        if r.children !== nothing 
+        if r.children !== nothing # Append children's Point's - No Check
             for c in r.children
                 append!(pointsInRange, queryRange(c, qryBox))
             end
         end
     
-    else 
-        # If partial overlap check each point on range 1-by-1    
+    else # If partial overlap check each point on range 1-by-1  
         if r.points !== nothing
             for p in r.points
                 if checkPoint(p, qryBox)
@@ -151,19 +148,18 @@ function queryRange(r::qtBox, qryBox::AbstractBox)::Array{Coord}
             end
         end
     
-        # Append children's point's - With 1-by-1 check
-        if r.children === nothing
+        if r.children === nothing # Append children's point's - With 1-by-1 check
             return pointsInRange # No children, exit
         else 
-            # recursively Add the points from the children
-            for c in r.children 
+            for c in r.children # recursively Add the points from the children
                 append!(pointsInRange, queryRange(c, qryBox))
             end
-        end
-        
+        end 
     end
     
+ 
     return pointsInRange 
+ 
 end
 
 
@@ -241,7 +237,7 @@ function removePoint!(r::qtBox, t::Coord)::Bool
             
     # If parent has children, recursively check to see if point is there
     if r.children !== nothing
-        for c in r.children
+        for c in r.children 
             if removePoint!(c, t)
                 return true
             end
@@ -272,7 +268,9 @@ end
 """ Get all values in a given radius in Kilometers of a Coord """
 function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
     # Get first square
-    return filter(x -> x = haversineDistance(x, c) < d, queryRange(r, getSearchRange(c, d)))
+    return filter(x -> x = haversineDistance(x, c) < d, 
+        queryRange(r, getSearchRange(c, d))
+    )
 end 
 
 """ 

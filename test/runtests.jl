@@ -35,7 +35,6 @@ end;
 
 # QTree Logic Tests 
 @testset "checkPoint Tests" begin
-    
     # Interior Points
     @test Quack.checkPoint(Quack.Coord(rand(), rand()), b) # Any rand pont on (0, 1)^2
     @test Quack.checkPoint(Quack.Coord(rand(), rand()), qtb) # Any rand pont on (0, 1)^2
@@ -74,6 +73,10 @@ end;
     @test_throws MethodError Quack.permissiveLen(Array{Quack.Coord}([c, nothing, c])) == 3
 end;
 
+@testset "getUUID Tests" begin
+    @test typeof(Quack.getUUID(Array{Quack.Coord}([c, c, c]))) == Array{UUID,1}
+end;
+
 @testset "haversineDistance Tests" begin
     brooklynNY = Quack.Coord(-73.949997, 40.650002)
     snowshoePA = Quack.Coord(-77.949165, 41.027779)
@@ -101,4 +104,7 @@ end;
     @test (q.SW.lng ≈ -0.4999999999999) && (q.SW.lat ≈ -0.4999999999999)
 end;
 
+@testset "queryRange" begin
+    @test_nowarn Quack.queryRange(qtb, b); # No Error When Empty...
+end;
 
