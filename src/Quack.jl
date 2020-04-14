@@ -4,7 +4,6 @@ const QT_MAX_PTS = 4
 
 include("geomtypes.jl") # Import Custom DataTypes
 
-
 """Generate uniform random points along a surface"""
 function genRandomCoords(x0::Float64, x1::Float64, y0::Float64, y1::Float64, n::Int)::Array{Coord}
     X = ((ones(n) * x0) + (rand(n) * (x1 - x0))) 
@@ -19,14 +18,13 @@ the east and north of the box's SW point
 function checkPoint(p::Coord, region::AbstractBox)::Bool
     # Check if point is to the east and north of the box's SW point 
     return (
-        (p.lng > region.SW.lng) & (p.lng < region.SW.lng + region.sideLength) &&
-        (p.lat > region.SW.lat) & (p.lat < region.SW.lat + region.sideLength)
+        (p.lng >= region.SW.lng) & (p.lat >= region.SW.lat) && 
+        (p.lng < region.SW.lng + region.sideLength) & (p.lat < region.SW.lat + region.sideLength)
     )
 end
 
 """
-Check if a Box (s1) wholly contains a qtBox (s0) 
-
+Check if a Box (s1) wholly contains a qtBox (s0)
 Because qtBox is square, The only checks required are:
     - s1 SW point LESS (more west) than s0's
     - s1 SE point MORE (more east) than s0's
@@ -191,7 +189,6 @@ function permissiveLen(x::Union{Array{Coord},Nothing})::Int64
     end
 end
     
-    
 """ Wrapper to evaluate if children are empty """
 function childrenEmpty(rs::Array{qtBox})::Bool
     return sum(x -> x = permissiveLen(x.points), rs) == 0
@@ -259,23 +256,23 @@ Calculate Haversine Distance between two Coords. Formula
 calculates great-circle distance between two points 
 Many thanks to: #https://github.com/quinnj/Rosetta-Julia/blob/master/src/Haversine.jl
 """
-function haversineDistance(p1::Coord, lng2::Float64, lat2::Float64)::Float64
-    lat1, lng1 = p1.lat, p1.lng 
+function haversineDistance(p1::Coord, p2::Coord)::Float64
+    lat1, lng1 = p1.lat, p1.lng
+    lat2, lng2 = p2.lat, p2.lng 
     return 2 * 6372.8 * asin(sqrt(sind((lat2-lat1)/2)^2 + cosd(lat1) * cosd(lat2) * sind((lng2 - lng1)/2)^2))
 end
 
 
 """ Get the bounding box implied from a center coordinate and a radius """
-function getSearchRange(c::Coord, radius::Float32)::Box
+function getSearchRange(c::Coord, radius::Float64)::Box
     return Box(Coord(c.lng - radius/√2 , c.lat - radius/√2), (2*radius)/√2)
 end
 
 
-""" Get all values in a given radius of a Coord """
-function radialSearch(r::qtBox, c::Coord, d::Float32)::Array{Coord}
+""" Get all values in a given radius in Kilometers of a Coord """
+function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
     # Get first square
-    lng, lat = getLocation(c)
-    return filter(x -> x = haversineDistance(x, lng, lat) < d, queryRange(r, getSearchRange(c, d)))
+    return filter(x -> x = haversineDistance(x, c) < d, queryRange(r, getSearchRange(c, d)))
 end 
 
 """ 
