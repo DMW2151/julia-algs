@@ -313,7 +313,8 @@ function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
         end
     end
     
-    return filter!(x -> x = haversineDistance(x, c) < d, pointsInRange) # End of function catch...
+    # End of function catch, minimize calls to filter
+    return filter!(x -> x = haversineDistance(x, c) < d, pointsInRange) 
 end 
 
 """ 
