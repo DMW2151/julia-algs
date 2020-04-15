@@ -1,12 +1,14 @@
 using Test
 using Random
 using UUIDs
+using CSV
 
 include("../src/Quack.jl") # Why TF does this work
 
 const c, b = Quack.Coord(0., 0.), Quack.Box(0., 0., 1.)
 const qtb = Quack.qtBox(c, 1)
 const ε = 1/10000
+const tampaBayCoord = Quack.Coord(-82.452606, 27.964157)
 
 @testset "Structure Init Tests - Coord" begin
     rng = MersenneTwister(2151)
@@ -121,4 +123,35 @@ end;
     end
 
     @test length(Quack.radialSearch(sampleQTree, circleCenter,  20.)) > 100
+end;
+
+
+@testset "radialSearch" begin
+
+    f = CSV.read("../examples/data/FL_insurance_sample.csv");
+    delta = 89.7
+    # Create coordinate Array from Data...
+    ps = [Quack.Coord(x, y) for (x,y) in zip(f[:, :point_longitude], f[:, :point_latitude])];
+
+    # # Manually Check Each Point (p) for D(Tampa, p) < 5km
+    manualResult = length(filter(p -> p = Quack.haversineDistance(p, tampaBayCoord) < delta, ps))
+
+    # Define Search Box for Florida Example...
+    lngLow, lngHigh = minimum(f[:, :point_longitude]), maximum(f[:, :point_longitude]);
+    latLow, latHigh = minimum(f[:, :point_latitude]), maximum(f[:, :point_latitude]);
+
+    minSideLength = maximum([lngHigh - lngLow, latHigh - latLow])
+
+    qtBoxSWCoord = Quack.Coord(lngLow, latLow)
+
+    sampleQTree = Quack.qtBox(qtBoxSWCoord, minSideLength + 1/1000)
+    for p in ps 
+        Quack.insertIntoQuadTree!(sampleQTree, p)
+    end
+
+    qtreeResult = length(Quack.radialSearch(sampleQTree, tampaBayCoord, delta))
+
+    @test manualResult == qtreeResult
+
+    
 end;

@@ -265,28 +265,14 @@ function getSearchRange(c::Coord, radius::Float64)::Box
 end
 
 
-""" 
-Check if any of the sides of a rectangle intersect a circle 
-   - https://mathworld.wolfram.com/Circle-LineIntersection.html
-Wolfram uses the following: determining factor: Delta=r^2d_r^2-D^2  
-Where:
-    - d_x =	x_2 - x_1
-    - d_y =	y_2 - y_1
-    - d_r =	sqrt(d_x^2+d_y^2)
-    - D = det(x, y)
-All of these get simplified when we use a square
-"""
+""" Check if any of the sides of a rectangle intersect a circle """
 function intersectCircle(r::AbstractBox, c::Coord, d::Float64)::Bool
-    if checkPoint(c, r) # First Check for if the center is in the box
+    # First Check for if the center is in the box
+    # Implement rest later...
+    if checkPoint(c, r) 
         return true
     end 
-
-    sL = r.sideLength
-    deltaCoords = (r.SW.lng - r.SW.lat)    
-    return (
-        (d^2 * sL^2) > (sL * (deltaCoords - sL))^2 &&
-        (d^2 * sL^2) > (sL * (deltaCoords + sL))^2
-    )
+    return false
 end
 
 """ 
@@ -316,13 +302,5 @@ function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
     # End of function catch, minimize calls to filter
     return filter!(x -> x = haversineDistance(x, c) < d, pointsInRange) 
 end 
-
-""" 
-Nearest Neighbor Search 
-    - http://homepage.divms.uiowa.edu/~kvaradar/sp2012/daa/ann.pdf
-"""
-function nnSearch(c::Coord)::Coord
-    return c #Not yet Implemented
-end
 
 end
