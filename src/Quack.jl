@@ -157,7 +157,6 @@ function queryRange(r::qtBox, qryBox::AbstractBox)::Array{Coord}
         end 
     end
     
- 
     return pointsInRange 
  
 end
@@ -202,11 +201,12 @@ function cleanUpQTree(r::qtBox)::Bool
         return true # Probably a new Tree
     end
     
-    # The Work...
+    # Clear children
     if (r.children !== nothing) && childrenEmpty(r.children)
         r.children = Array{qtBox}([])
     end
     
+    # If children not empty; check if grand-children empty...
     if (r.children !== nothing) && isassigned(r.children)
         for c in r.children 
             cleanUpQTree(c)
@@ -265,12 +265,55 @@ function getSearchRange(c::Coord, radius::Float64)::Box
 end
 
 
-""" Get all values in a given radius in Kilometers of a Coord """
-function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
-    # Get first square
-    return filter(x -> x = haversineDistance(x, c) < d, 
-        queryRange(r, getSearchRange(c, d))
+""" 
+Check if any of the sides of a rectangle intersect a circle 
+   - https://mathworld.wolfram.com/Circle-LineIntersection.html
+Wolfram uses the following: determining factor: Delta=r^2d_r^2-D^2  
+Where:
+    - d_x =	x_2 - x_1
+    - d_y =	y_2 - y_1
+    - d_r =	sqrt(d_x^2+d_y^2)
+    - D = det(x, y)
+All of these get simplified when we use a square
+"""
+function intersectCircle(r::AbstractBox, c::Coord, d::Float64)::Bool
+    if checkPoint(c, r) # First Check for if the center is in the box
+        return true
+    end 
+
+    sL = r.sideLength
+    deltaCoords = (r.SW.lng - r.SW.lat)    
+    return (
+        (d^2 * sL^2) > (sL * (deltaCoords - sL))^2 &&
+        (d^2 * sL^2) > (sL * (deltaCoords + sL))^2
     )
+end
+
+""" 
+Get all values in a given radius in Kilometers of a Coord 
+https://stackoverflow.com/questions/401847/circle-rectangle-collision-detection-intersection
+"""
+function radialSearch(r::qtBox, c::Coord, d::Float64)::Array{Coord}
+    # If intersection, then
+    pointsInRange = Array{Coord}(Array[])
+    
+    if (!intersectCircle(r, c, d))
+        return pointsInRange # Exit if the range does not intersect this quad
+    end
+    
+    if r.points !== nothing # Haversine is super expensive compared to cartesian distance
+        append!(pointsInRange, r.points)
+    end
+
+    if r.children === nothing # Append children's point's - With 1-by-1 check
+        return pointsInRange # No children, exit
+    else 
+        for child in r.children # recursively Add the points from the children
+            append!(pointsInRange, radialSearch(child, c , d))
+        end
+    end
+    
+    return filter!(x -> x = haversineDistance(x, c) < d, pointsInRange) # End of function catch...
 end 
 
 """ 
